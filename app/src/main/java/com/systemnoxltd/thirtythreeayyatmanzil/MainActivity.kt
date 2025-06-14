@@ -83,7 +83,7 @@ class MainActivity : AppCompatActivity() {
                         dialog.listener = object : BookmarksDialogFragment.OnBookmarkSelectedListener {
                             override fun onBookmarkSelected(pageNumber: Int) {
                                 // Handle it here (scroll or navigate)
-                                jumpToPage(pageNumber)
+                                jumpToPage(pageNumber+1)
                             }
                         }
                         dialog.show(supportFragmentManager, "BookmarksDialog")
