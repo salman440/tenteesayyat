@@ -1,3 +1,12 @@
 <resources>
     <string name="app_name">33 Ayyat</string>
+    <string name="new_bookmark">New Bookmark</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="title">Title</string>
+    <string name="page_1">Page 1</string>
+    <string name="icon_to_close_the_popup">icon to close the popup</string>
+    <string name="home">Home</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

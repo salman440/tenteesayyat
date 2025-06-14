@@ -3,8 +3,13 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <include
+        android:id="@+id/action_bar_main_activity"
+        layout="@layout/custom_action_bar" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/pdfRecyclerView"
+        android:layout_below="@+id/action_bar_main_activity"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:scrollbars="vertical" />
@@ -15,11 +20,11 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
-        android:text="0 / 0"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/page_indicator_bg"
         android:paddingHorizontal="16dp"
         android:paddingVertical="8dp"
-        android:textSize="16sp"
+        android:text="0 / 0"
         android:textColor="@android:color/white"
-        android:background="@drawable/page_indicator_bg"
-        android:layout_marginBottom="8dp" />
+        android:textSize="16sp" />
 </RelativeLayout>

@@ -47,4 +47,5 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     implementation(libs.playAppUpdate)
     implementation(libs.playReview)
+    implementation(libs.sdp.android)
 }

@@ -1,28 +1,28 @@
 package com.systemnoxltd.thirtythreeayyatmanzil
 
-import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.pdf.PdfRenderer
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import android.view.Menu
-import android.view.MenuItem
+import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.PopupMenu
+import androidx.core.graphics.createBitmap
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import androidx.viewpager2.widget.ViewPager2
+import com.systemnoxltd.thirtythreeayyatmanzil.fragments.BookmarksDialogFragment
 import com.systemnoxltd.thirtythreeayyatmanzil.utils.BookmarkManager
 import com.systemnoxltd.thirtythreeayyatmanzil.utils.PdfPageAdapter
 import com.systemnoxltd.thirtythreeayyatmanzil.utils.RatePrompt
-import com.systemnoxltd.thirtythreeayyatmanzil.utils.UpdateChecker
 import java.io.File
 import java.io.FileOutputStream
-import androidx.core.graphics.createBitmap
 
 class MainActivity : AppCompatActivity() {
 
@@ -35,10 +35,13 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        supportActionBar?.hide()
         setContentView(R.layout.activity_main)
 
+        val menuIcon = findViewById<ImageView>(R.id.menuIcon)
         recyclerView = findViewById(R.id.pdfRecyclerView)
         pageIndicator = findViewById(R.id.pageIndicator)
+
 
         val pages = loadPagesFromAssets()
         totalPages = pages.size
@@ -64,16 +67,45 @@ class MainActivity : AppCompatActivity() {
         val startPage = intent.getIntExtra("page", 0)
         recyclerView.scrollToPosition(startPage)
 
+        menuIcon.setOnClickListener { view ->
+            val popup = PopupMenu(this, view)
+            popup.menuInflater.inflate(R.menu.main_menu, popup.menu)
+
+            popup.setOnMenuItemClickListener { item ->
+                when (item.itemId) {
+                    R.id.add_bookmark -> {
+                        showAddBookmarkDialog()
+                        true
+                    }
+                    R.id.all_bookmarks -> {
+//                        startActivity(Intent(this, BookmarksActivity::class.java))
+                        val dialog = BookmarksDialogFragment()
+                        dialog.listener = object : BookmarksDialogFragment.OnBookmarkSelectedListener {
+                            override fun onBookmarkSelected(pageNumber: Int) {
+                                // Handle it here (scroll or navigate)
+                                jumpToPage(pageNumber)
+                            }
+                        }
+                        dialog.show(supportFragmentManager, "BookmarksDialog")
+                        true
+                    }
+                    R.id.rate_us -> {
+                        RatePrompt.rateOnPlayStore(this)
+                        true
+                    }
+                    else -> false
+                }
+            }
+
+            popup.show()
+        }
+
     }
 
     private fun updatePageIndicator(currentPage: Int) {
         this.currentPage = currentPage
         val pageInfo = "${currentPage + 1} / $totalPages"
         pageIndicator.text = pageInfo
-    }
-
-    fun jumpToPage(pageIndex: Int) {
-        recyclerView.scrollToPosition(pageIndex)
     }
 
     fun loadPagesFromAssets(): List<Bitmap> {
@@ -116,19 +148,6 @@ class MainActivity : AppCompatActivity() {
         return true
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        when (item.itemId) {
-            R.id.add_bookmark -> {
-//                BookmarkManager.addBookmark(this, currentPage + 1)
-                showAddBookmarkDialog()
-                return true
-            }
-            R.id.all_bookmarks -> startActivity(Intent(this, BookmarksActivity::class.java))
-            R.id.rate_us -> RatePrompt.rateOnPlayStore(this)
-        }
-        return true
-    }
-
     @Deprecated("Deprecated in Android 13+")
     @Suppress("DEPRECATION")
     override fun onBackPressed() {
@@ -141,26 +160,43 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showAddBookmarkDialog() {
-        val builder = AlertDialog.Builder(this)
-        val input = EditText(this)
-        input.hint = "Enter bookmark title"
+        val dialogView = layoutInflater.inflate(R.layout.dialog_add_bookmark, null)
+        val dialog = AlertDialog.Builder(this).create()
+        dialog.setView(dialogView)
+        dialog.setCancelable(false)
 
-        val padding = resources.getDimensionPixelSize(R.dimen.dialog_padding)
-        input.setPadding(padding, padding, padding, padding)
+        val closeIcon = dialogView.findViewById<ImageView>(R.id.closeIcon)
+        val pageText = dialogView.findViewById<TextView>(R.id.pageNumberText)
+        val titleInput = dialogView.findViewById<EditText>(R.id.bookmarkTitleInput)
+        val saveBtn = dialogView.findViewById<Button>(R.id.saveBtn)
+        val cancelBtn = dialogView.findViewById<Button>(R.id.cancelBtn)
 
-        builder.setTitle("Add Bookmark")
-        builder.setMessage("Page ${currentPage + 1}")
-        builder.setView(input)
+        pageText.text = "Page ${currentPage + 1}"
 
-        builder.setPositiveButton("Save") { _, _ ->
-            val title = input.text.toString().ifBlank { "Page ${currentPage + 1}" }
+        closeIcon.setOnClickListener { dialog.dismiss() }
+        cancelBtn.setOnClickListener { dialog.dismiss() }
+
+        saveBtn.setOnClickListener {
+            val title = titleInput.text.toString().ifBlank { "Page ${currentPage + 1}" }
             BookmarkManager.addBookmark(this, currentPage, title)
             Toast.makeText(this, "Bookmark saved", Toast.LENGTH_SHORT).show()
+            dialog.dismiss()
         }
 
-        builder.setNegativeButton("Cancel", null)
-        builder.show()
+        dialog.show()
     }
 
+    fun jumpToPage(pageIndex: Int) {
+        if (::recyclerView.isInitialized && ::layoutManager.isInitialized) {
+            if (pageIndex in 0 until totalPages) {
+                recyclerView.post {
+                    layoutManager.scrollToPositionWithOffset(pageIndex, 0)
+                    updatePageIndicator(pageIndex)
+                }
+            } else {
+                Toast.makeText(this, "Invalid page", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
 }

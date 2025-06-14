@@ -2,49 +2,66 @@ package com.systemnoxltd.thirtythreeayyatmanzil
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.ArrayAdapter
-import android.widget.Button
-import android.widget.ListView
+import android.view.View
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.DividerItemDecoration
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.systemnoxltd.thirtythreeayyatmanzil.utils.BookmarkAdapter
 import com.systemnoxltd.thirtythreeayyatmanzil.utils.BookmarkManager
 
 class BookmarksActivity : AppCompatActivity() {
-    private lateinit var bookmarkList: ListView
-    private lateinit var adapter: ArrayAdapter<String>
+
+    private lateinit var recyclerView: RecyclerView
+    private lateinit var adapter: BookmarkAdapter
     private val bookmarks = mutableListOf<Pair<Int, String>>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        supportActionBar?.hide()
         setContentView(R.layout.activity_bookmarks)
 
-        bookmarkList = findViewById(R.id.bookmarkList)
+        recyclerView = findViewById(R.id.bookmarksRecyclerView)
+
         bookmarks.addAll(BookmarkManager.getBookmarks(this))
-        adapter = ArrayAdapter(
-            this, android.R.layout.simple_list_item_1,
-            bookmarks.map { "Page ${it.first + 1}: ${it.second}" })
-        bookmarkList.adapter = adapter
+        val dividerItemDecoration = DividerItemDecoration(this, DividerItemDecoration.VERTICAL)
+        recyclerView.addItemDecoration(dividerItemDecoration)
+        adapter = BookmarkAdapter(
+            bookmarks,
+            onItemClick = { pageNumber ->
+                val intent = Intent(this, MainActivity::class.java)
+                intent.putExtra("page", pageNumber)
+                intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                startActivity(intent)
+                finish()
+            },
+            onDelete = { pageToDelete ->
+                BookmarkManager.removeBookmark(this, pageToDelete)
+                bookmarks.clear()
+                bookmarks.addAll(BookmarkManager.getBookmarks(this))
+                adapter.notifyDataSetChanged()
+                updateEmptyState()
+            }
+        )
+        adapter.notifyDataSetChanged()
+        updateEmptyState()
 
-        bookmarkList.setOnItemClickListener { _, _, position, _ ->
-            val page = bookmarks[position].first
-            val intent = Intent(this, MainActivity::class.java)
-            intent.putExtra("page", page)
-            startActivity(intent)
-        }
+        recyclerView.layoutManager = LinearLayoutManager(this)
+        recyclerView.adapter = adapter
 
-        bookmarkList.setOnItemLongClickListener { _, _, position, _ ->
-            val page = bookmarks[position].first
-            BookmarkManager.removeBookmark(this, page)
-            bookmarks.removeAt(position)
-            adapter.clear()
-            adapter.addAll(bookmarks.map { "Page ${it.first + 1}: ${it.second}" })
-            true
-        }
 
-        findViewById<Button>(R.id.clearBtn).setOnClickListener {
+        findViewById<TextView>(R.id.clearAll).setOnClickListener {
             BookmarkManager.clearAll(this)
             bookmarks.clear()
-            adapter.clear()
+            adapter.notifyDataSetChanged()
+            updateEmptyState()
         }
+    }
+
+    private fun updateEmptyState() {
+        val emptyView = findViewById<TextView>(R.id.emptyView)
+        emptyView.visibility = if (bookmarks.isEmpty()) View.VISIBLE else View.GONE
     }
 
 }
